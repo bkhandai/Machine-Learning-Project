@@ -1,0 +1,131 @@
+---
+title: "Machine Learning Course Project"
+author: "Biswajit Khandai"
+date: "December 22, 2018"
+output: html_document
+---
+
+```{r echo=FALSE, results=FALSE}
+
+library(caret)
+library(randomForest)
+library(doParallel)
+library(rattle)
+library(rpart.plot)
+library(corrplot)
+
+
+```
+
+##Introduction
+
+In this project, we use machine learning on activity tracker data from fitness devices such as Jawbone and Fitbit. The training and the testing data are in separate sets. We learn from the training set and apply the model to the testing set to predict whether the exercises performed by participants used proper form or not.
+
+##Acknowledgement
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har
+
+Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements. Proceedings of 21st Brazilian Symposium on Artificial Intelligence. Advances in Artificial Intelligence - SBIA 2012. In: Lecture Notes in Computer Science. , pp. 52-61. Curitiba, PR: Springer Berlin / Heidelberg, 2012. ISBN 978-3-642-34458-9. DOI: 10.1007/978-3-642-34459-6_6. 
+
+
+##Load the data
+```{r cache=TRUE}
+trng_url = "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv";
+test_url = "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv";
+
+training = read.csv(url(trng_url), header=TRUE, na.strings=c("NA","#DIV/0!",""));
+testing  = read.csv(url(test_url), header=TRUE, na.strings=c("NA","#DIV/0!",""));
+```
+
+##View the training data. Uncomment some code if you need to view.
+```{r results=FALSE, echo=FALSE}
+##summary(training) # uncomment if you need to see this
+##names(training)   # uncomment if you need to see this.
+dim(training);
+str(training);
+
+##summary(training) # uncomment if you need to see this
+##names(training)   # uncomment if you need to see this.
+dim(testing);
+str(testing);
+```
+
+##Clean up the data a bit.
+The first seven columns of the training data are just identifying information. Let's remove them. Also, let's first seven columns from the training data.
+Let's also remove the columns that have 80% or more NA values. 
+
+```{r results = TRUE, cache = TRUE}
+trng_cleaned = training[, -c(1:7)];
+trng_cleaned = trng_cleaned[sapply(trng_cleaned,
+                   function(x) {sum(is.na(x)) < (0.2 * nrow(trng_cleaned))})];
+dim(trng_cleaned);
+```
+
+The training data after cleaning up has rows and  columns. 
+
+Let's remove the first column from the test data. That is not an interesting value.
+Let's then remove the columns that have 80% or more NA values.
+
+```{r results = TRUE, cache = TRUE}
+test_cleaned = testing[, -1];
+test_cleaned = test_cleaned[sapply(test_cleaned,
+                   function(x) {sum(is.na(x)) < (0.2 * nrow(test_cleaned))})];
+```
+
+### Slice the training data into training and validation
+Let's split the cleaned training data into 70% pure training data and 30% validation data. We will use the validation data set to conduct cross validation in future steps.  
+
+```{r results = TRUE, cache = TRUE}
+set.seed (1000) # For reproducibile results
+in_train   = createDataPartition (trng_cleaned$classe, p = 0.70, list = FALSE)
+train_partition  = trng_cleaned[in_train, ]
+valid_partition  = trng_cleaned[-in_train, ]
+```
+
+## Train the Model on the training partition
+We will use the **Random Forest** algorithm to train the model. Random forest  automatically selects the most significant variables. We choose a 5-fold cross validation.  
+
+```{r results = TRUE, cache = TRUE}
+trng_ctrl = trainControl (method = "cv", 5)
+mdl_rf    = train (classe ~ ., data = train_partition,
+                   method="rf", trControl = trng_ctrl, ntree=250)
+mdl_rf
+
+```
+
+## Estimate the accuracy of the model on the validation partition.  
+
+```{r results = TRUE, cache = TRUE}
+pred_rf = predict (mdl_rf, valid_partition);
+confusionMatrix (valid_partition$classe, pred_rf);
+
+accuracy = postResample(pred_rf, valid_partition$classe);
+accuracy;
+out_of_samp_err = 1 - as.numeric(confusionMatrix(valid_partition$classe,
+                                                 pred_rf)$overall[1]);
+out_of_samp_err;
+```
+
+The estimated accuracy of the model is 99.42% and the estimated out-of-sample error is 0.58%.
+
+## Apply the model to do prediction on the Test data 
+Now, we apply the model to the original testing data set downloaded from the data source. We remove the `problem_id`
+
+```{r results = TRUE, cache = TRUE}
+result = predict(mdl_rf, test_cleaned);
+result;
+
+```
+
+
+## Appendix: Figures
+###1. Accuracy of the Random Forest model  
+```{r, cache = TRUE}
+plot(mdl_rf, main="Accuracy of Random forest model by number of predictors");
+```
+
+###2. Decision Tree Visualization
+```{r, cache = TRUE}
+tree_mdl = rpart(classe ~ ., data=train_partition, method="class");
+prp(tree_mdl);
+```
