@@ -208,7 +208,7 @@ valid_partition  = trng_cleaned[-in_train, ]</code></pre>
 <p>We will use the <strong>Random Forest</strong> algorithm to train the model. Random forest automatically selects the most significant variables. We choose a 5-fold cross validation.</p>
 <pre class="r"><code>trng_ctrl = trainControl (method = &quot;cv&quot;, 5)
 mdl_rf    = train (classe ~ ., data = train_partition,
-                   method=&quot;rf&quot;, trControl = trng_ctrl, ntree=250)
+                   method=&quot;rf&quot;, trControl = trng_ctrl)
 mdl_rf</code></pre>
 <pre><code>## Random Forest 
 ## 
@@ -222,12 +222,12 @@ mdl_rf</code></pre>
 ## Resampling results across tuning parameters:
 ## 
 ##   mtry  Accuracy   Kappa    
-##    2    0.9898814  0.9871991
-##   27    0.9898813  0.9871996
-##   52    0.9860228  0.9823188
+##    2    0.9899541  0.9872909
+##   27    0.9900268  0.9873834
+##   52    0.9863140  0.9826874
 ## 
 ## Accuracy was used to select the optimal model using the largest value.
-## The final value used for the model was mtry = 2.</code></pre>
+## The final value used for the model was mtry = 27.</code></pre>
 </div>
 <div id="estimate-the-accuracy-of-the-model-on-the-validation-partition." class="section level2">
 <h2>Estimate the accuracy of the model on the validation partition.</h2>

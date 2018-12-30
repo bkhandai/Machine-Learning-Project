@@ -88,7 +88,7 @@ We will use the **Random Forest** algorithm to train the model. Random forest  a
 ```{r results = TRUE, cache = TRUE}
 trng_ctrl = trainControl (method = "cv", 5)
 mdl_rf    = train (classe ~ ., data = train_partition,
-                   method="rf", trControl = trng_ctrl, ntree=250)
+                   method="rf", trControl = trng_ctrl)
 mdl_rf
 
 ```
